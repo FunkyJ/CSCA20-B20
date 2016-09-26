@@ -1,0 +1,153 @@
+# File: b (Python 3.4)
+
+import sqlite3
+import datetime
+import sys
+
+def get_date():
+    '''Return todays date as YYYY-MM-DD.'''
+    now = datetime.datetime.now()
+    return now.strftime('%Y-%m-%d')
+
+
+def run_query(db, query, args = None):
+    '''Return the results of running the given query on database db.'''
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    if args == None:
+        cur.execute(query)
+    else:
+        cur.execute(query, args)
+    data = cur.fetchall()
+    cur.close()
+    con.close()
+    return data
+
+
+def run_command(db, command, args = None):
+    '''Execute the given command with the args on database db.'''
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    if args == None:
+        cur.execute(command)
+    else:
+        cur.execute(command, args)
+    cur.close()
+    con.commit()
+    con.close()
+
+
+def setup_accounts(db, filename):
+    '''Create and populate the Accounts table for database db using the
+    contents of the file named filename.'''
+    data_file = open(filename)
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    cur.execute('CREATE TABLE Accounts(\n    Number TEXT, Savings REAL, Chequing REAL)')
+    for line in data_file:
+        data = line.split(',')
+        cur.execute('INSERT INTO Accounts VALUES(?, ?, ?)', (data[0].strip(), float(data[1].strip()), float(data[2].strip())))
+    
+    data_file.close()
+    cur.close()
+    con.commit()
+    con.close()
+
+
+def setup_transactions(db, filename):
+    '''Create and populate the Transactions table for database db using the
+    contents of the file named filename.'''
+    data_file = open(filename)
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    cur.execute('CREATE TABLE Transactions(\n    Date TEXT, Number TEXT, Type TEXT, PayFrom TEXT, PayTo TEXT, Amount REAL)')
+    for line in data_file:
+        data = line.split(',')
+        cur.execute('INSERT INTO Transactions\n        VALUES(?, ?, ?, ?, ?, ?)', (data[0].strip(), data[1].strip(), data[2].strip(), data[3].strip(), data[4].strip(), float(data[5].strip())))
+    
+    data_file.close()
+    cur.close()
+    con.commit()
+    con.close()
+
+
+def setup_security(db, filename):
+    '''Create and populate the Security table for database db using the
+     contents of the file named filename.'''
+    data_file = open(filename)
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    cur.execute('CREATE TABLE Security(\n    Number TEXT, Password TEXT, Name TEXT, Address TEXT)')
+    for line in data_file:
+        data = line.split(',')
+        cur.execute('INSERT INTO Security\n        VALUES(?, ?, ?, ?)', (data[0].strip(), data[1].strip(), data[2].strip(), data[3].strip()))
+    
+    data_file.close()
+    cur.close()
+    con.commit()
+    con.close()
+
+
+def get_account_balances(dbname, number):
+    '''Return the Savings and Chequing account balances for the bank account 
+    number from the database tables in database named dbname.'''
+    return run_query(dbname, 'SELECT Savings, Chequing FROM Accounts WHERE\n    number = (?)', (number,))
+
+
+def update_account_balance(dbname, number, account, balance_change):
+    '''Update the balance for the bank number of type account (savings/chequing)
+    by changing the current balance by balance_change. Return the new balance.'''
+    if account == 'Savings':
+        (balance,) = ()
+        balance = balance + float(balance_change)
+        run_command(dbname, 'UPDATE Accounts SET Savings = (?) \n        WHERE Number = (?)', (balance, number))
+    else:
+        (balance,) = ()
+        balance = balance + float(balance_change)
+        print('balance is', balance)
+        run_command(dbname, 'UPDATE Accounts SET Chequing = (?) \n        WHERE Number = (?)', (balance, number))
+    return balance
+
+
+def pay_bill(dbname, bill, number, account, amount, date):
+    '''Add a row to the transactions table, update the account balance and 
+    return the new account balance.'''
+    new_balance = update_account_balance(dbname, number, account, 0 - float(amount))
+    run_command(dbname, 'INSERT INTO Transactions VALUES(?, ?, ?, ?, ?, ?)', (date, number, 'Bill', account, bill, amount))
+    return new_balance
+
+
+def transfer_funds(dbname, number, from_account, to_account, amount, date):
+    '''Add a row to the transactions table, update the account balance and 
+    return the new account balance.'''
+    from_new_balance = update_account_balance(dbname, number, from_account, 0 - float(amount))
+    to_new_balance = update_account_balance(dbname, number, to_account, float(amount))
+    run_command(dbname, 'INSERT INTO Transactions VALUES(?, ?, ?, ?, ?, ?)', (date, number, 'Transfer', from_account, to_account, amount))
+    return [
+        from_new_balance,
+        to_new_balance]
+
+
+def get_transactions(dbname, number, from_acc, pay_to):
+    '''Return all transaction for bank account number, where the transaction
+    moved money from the account from_acc to the account or bill pay_to.'''
+    return run_query(dbname, 'SELECT Date, Amount FROM Transactions WHERE\n    Number = (?) AND PayFrom = (?) and PayTo = (?)', (number, from_acc, pay_to))
+
+
+def get_bills(dbname, number, from_acc):
+    '''Return a list of those bills paid from from_acc.'''
+    return run_query(dbname, 'SELECT DISTINCT PayTo FROM Transactions WHERE Number = (?)\n    AND PayFrom = (?)', (number, from_acc))
+
+
+def sum_transactions(dbname, number, date):
+    '''Return the sum of the bill payments for each bill payment made after the 
+    given date.'''
+    L = run_query(dbname, "SELECT PayTo, SUM(Amount) FROM Transactions WHERE\n    Number = (?) AND Date > (?) and Type = 'Bill' GROUP BY PayTo", (number, date))
+    return L
+
+
+def get_account_info(dbname, number):
+    '''Return the Name and account balances for the account with the given 
+    number from tables in the database dbname.'''
+    return run_query(dbname, 'SELECT Security.Name, Security.Address, \n    Accounts.Savings, Accounts.Chequing FROM Security JOIN Accounts \n    WHERE Security.Number == (?) AND Accounts.Number = (?)', (number, number))
+

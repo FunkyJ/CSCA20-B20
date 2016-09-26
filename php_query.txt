@@ -1,0 +1,102 @@
+<?php
+	// define a function to display the result of a query as a table
+	// use the foreach loop with each item as index => array[index]
+	function make_table($query) {
+		echo "<table><tr>";
+		$row = mysqli_fetch_assoc($query);
+		foreach ($row as $attr => $value) {
+			echo "<th>$attr</th>";
+		}
+		echo "</tr>";
+		while ($row = mysqli_fetch_assoc($query)) { 
+			echo "<tr>";
+			foreach($row as $value) {
+				echo "<td>$value</td>";
+			}
+			echo "</tr>";
+		}
+		echo "</table>";
+	}
+?>
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table, th, td {
+     border: 1px solid black;
+}
+</style>
+<title>This is a php mysql test</title></head>
+<body> <h2>Working with MySQL and PHP</h2>
+<?php
+   
+
+	# copy and edit config.php to use your database login credentials
+	include 'config.php';
+
+	header("Content-type: text/html");
+	// Create connection
+	$conn = mysqli_connect($servername, $username, $password, $dbname);
+
+	// Check connection
+	if (!$conn) {
+		echo "Failure";
+		die("Connection failed: " . mysqli_connect_error());
+	}
+	// echo "Connected successfully<br>";
+
+
+	$sql = "SELECT id, first_name, last_name FROM actors where last_name = 'Anderson'; ";
+	$result = mysqli_query($conn, $sql);
+
+	
+	# loop through the array of results returned by the DB
+	?>
+	
+	<?php
+	if (mysqli_num_rows($result) > 0) { ?>
+		<ol>
+		<?
+		while ($row = mysqli_fetch_assoc($result)) { ?>
+			<li> <?= $row["first_name"] . ", " . $row["last_name"] ?> </li>
+	<?php
+		} 
+	?> </ol> <?php
+	}else {
+		print "0 results";
+	}
+	
+	// Free result set
+	//mysqli_free_result($result);
+
+
+	$sql = "SELECT first_name AS 'First Name', last_name AS 'Last Name', role AS 'Role' 
+		FROM actors JOIN roles ON roles.actor_id = actors.id where roles.role = 'Stormtrooper';";
+	$result = mysqli_query($conn, $sql);
+	
+	//make_table($result);
+	?>
+	
+	<table><tr><th>First Name</th><th>Last Name</th><th>Role</th></tr>
+	<?php
+	// display the result as a table
+	while ($row = mysqli_fetch_assoc($result)) { ?>
+		<tr><td> <?= $row["First Name"] ?> </td><td><?= $row["Last Name"] ?></td><td><?= $row["Role"] ?></td></tr>
+	<?php
+	}
+	?>
+	</table>
+
+	
+	
+	
+	
+
+
+
+
+</body>
+</html>

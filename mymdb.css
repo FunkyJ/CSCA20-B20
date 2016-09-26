@@ -1,0 +1,52 @@
+body  {
+    background-color:darkgray;
+    margin-top:-1px;
+    margin-left: 50px;
+    margin-right: 50px;
+}
+#frame  {
+    border-left:20px solid darkgray;
+    border-right:20px solid darkgray;
+    background-color:white;
+    height: auto;
+    position: relative;
+}
+header, footer  {
+    background-color:black;
+    border: 8px solid black;
+    padding-top: 0px;
+    color: white;
+    font-size: 12pt;
+    font-family: Verdana, Tahoma, sans-serif;
+}
+#main  {
+    text-align:center;
+}
+fieldset  {
+    width: 600px;
+    margin: auto;
+}
+.input  {
+    margin-top: 20px;
+}
+#kevbox  {
+    margin-right: 375px;
+    margin-bottom: 20px;
+}
+h1, fieldset  {
+    font-weight:bold;
+}
+h1  {
+    font-size:36pt
+}
+fieldset  {
+    font-size: 16pt
+}
+#results {
+    margin:auto;
+    font-size: 16pt;
+    border: 1px solid darkgray;
+}
+#results tr:nth-child(even) {
+    background-color:darkgray;
+}
